@@ -144,13 +144,13 @@ curl http://localhost:3000/health
 # Metrics
 curl http://localhost:3000/metrics
 
-# Fetch a note embed
+# Fetch a note embed (replace with a real instance and note ID)
 curl http://localhost:3000/sharkey.example.com/notes/9xyzabc123
 
 # Test invalid domain (should return 400)
 curl http://localhost:3000/localhost/notes/abc123
 
-# Test rate limiting headers
+# Test rate limiting headers (headers are returned regardless of upstream response)
 curl -v http://localhost:3000/misskey.io/notes/abc123 2>&1 | grep X-RateLimit
 ```
 

@@ -9,18 +9,6 @@ const net = require('node:net');
 const VALID_HOSTNAME_RE = /^(?!-)[a-zA-Z0-9-]{1,63}(?<!-)(\.[a-zA-Z0-9-]{1,63})*\.[a-zA-Z]{2,}$/;
 
 /**
- * Private/reserved IPv4 ranges (CIDR notation parsed below).
- */
-const PRIVATE_RANGES_V4 = [
-  { prefix: '10.', mask: 8 },
-  { prefix: '127.', mask: 8 },
-  { prefix: '169.254.', mask: 16 },
-  { prefix: '172.16.', min: 16, max: 31 },
-  { prefix: '192.168.', mask: 16 },
-  { prefix: '0.', mask: 8 },
-];
-
-/**
  * Check if an IPv4 address is in a private/reserved range.
  * @param {string} ip
  * @returns {boolean}
