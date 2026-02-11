@@ -1,0 +1,24 @@
+{
+  "name": "vxsharkey",
+  "version": "1.0.0",
+  "description": "Embed-optimized proxy for public Sharkey/Misskey notes",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test test/test.js"
+  },
+  "keywords": [
+    "sharkey",
+    "misskey",
+    "embed",
+    "opengraph",
+    "vxtwitter"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "fastify": "^5.7.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
