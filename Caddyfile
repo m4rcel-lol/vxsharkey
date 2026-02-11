@@ -1,0 +1,26 @@
+# Caddy reverse proxy configuration for vxsharkey
+# Place this in /etc/caddy/Caddyfile or include it
+
+vx.twitkey.com {
+    reverse_proxy 127.0.0.1:3000 {
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        transport http {
+            keepalive 30s
+            keepalive_idle_conns 16
+        }
+    }
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy strict-origin-when-cross-origin
+        Content-Security-Policy "default-src 'self'; img-src https: data:; style-src 'unsafe-inline'; media-src https:;"
+    }
+
+    log {
+        output file /var/log/caddy/vxsharkey.log
+        format json
+    }
+}

@@ -1,0 +1,39 @@
+[Unit]
+Description=vxsharkey - Embed proxy for Sharkey/Misskey notes
+Documentation=https://github.com/m4rcel-lol/vxsharkey
+After=network.target
+
+[Service]
+Type=simple
+User=vxsharkey
+Group=vxsharkey
+WorkingDirectory=/opt/vxsharkey
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=5
+
+# Environment
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOST=127.0.0.1
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ReadOnlyPaths=/opt/vxsharkey
+
+# Resource limits
+LimitNOFILE=65535
+MemoryMax=256M
+CPUQuota=200%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=vxsharkey
+
+[Install]
+WantedBy=multi-user.target
