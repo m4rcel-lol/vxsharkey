@@ -63,7 +63,7 @@ function renderNote(note, instance) {
   // Append engagement stats to description
   const stats = [];
   if (repliesCount > 0) stats.push(`💬 ${repliesCount}`);
-  if (renoteCount > 0) stats.push(`🔁 ${renoteCount}`);
+  if (renoteCount > 0) stats.push(`🚀 ${renoteCount}`);
   if (reactionCount > 0) stats.push(`⭐ ${reactionCount}`);
   if (stats.length > 0) {
     description += `\n\n${stats.join('  ')}`;
@@ -127,7 +127,7 @@ function renderNote(note, instance) {
   if (repliesCount > 0 || renoteCount > 0 || reactionCount > 0) {
     statsHtml = '<div class="stats">';
     if (repliesCount > 0) statsHtml += `<span class="stat">💬 ${repliesCount}</span>`;
-    if (renoteCount > 0) statsHtml += `<span class="stat">🔁 ${renoteCount}</span>`;
+    if (renoteCount > 0) statsHtml += `<span class="stat">🚀 ${renoteCount}</span>`;
     if (reactionCount > 0) statsHtml += `<span class="stat">⭐ ${reactionCount}</span>`;
     statsHtml += '</div>';
   }
@@ -336,7 +336,7 @@ code{background:#0d1117;padding:3px 8px;border-radius:4px;font-size:0.95em;color
 <li>Rich OpenGraph &amp; Twitter Card metadata</li>
 <li>Image and video preview support</li>
 <li>Content Warning (CW) display</li>
-<li>Engagement stats (replies, renotes, reactions)</li>
+<li>Engagement stats (replies, boosts, reactions)</li>
 <li>Automatic redirect for regular browsers</li>
 <li>Fast in-memory caching</li>
 </ul>
