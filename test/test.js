@@ -502,24 +502,24 @@ describe('render', () => {
       assert.equal(oEmbed.thumbnail_url, undefined);
     });
 
-    it('includes provider_name as vxsharkey with formatted date in oEmbed data', () => {
+    it('includes provider_name as 🦈 vxsharkey with formatted date in oEmbed data', () => {
       const html = renderNote(sampleNote, 'example.com');
       // Extract the oEmbed JSON from the data URI
       const match = html.match(/data:application\/json,([^"]+)/);
       assert.ok(match, 'oEmbed data URI should be present');
       const oEmbed = JSON.parse(decodeURIComponent(match[1]));
-      assert.ok(oEmbed.provider_name.startsWith('vxsharkey'));
+      assert.ok(oEmbed.provider_name.startsWith('🦈 vxsharkey'));
       assert.ok(oEmbed.provider_name.includes('Jan'));
       assert.ok(oEmbed.provider_name.includes('2024'));
     });
 
-    it('includes provider_name as vxsharkey without date when createdAt missing', () => {
+    it('includes provider_name as 🦈 vxsharkey without date when createdAt missing', () => {
       const noteNoDate = { ...sampleNote, createdAt: null };
       const html = renderNote(noteNoDate, 'example.com');
       const match = html.match(/data:application\/json,([^"]+)/);
       assert.ok(match, 'oEmbed data URI should be present');
       const oEmbed = JSON.parse(decodeURIComponent(match[1]));
-      assert.equal(oEmbed.provider_name, 'vxsharkey');
+      assert.equal(oEmbed.provider_name, '🦈 vxsharkey');
     });
 
     it('does not include non-standard author_icon or provider_icon', () => {
