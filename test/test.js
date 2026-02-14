@@ -479,6 +479,49 @@ describe('render', () => {
       const html = renderNote(sampleNote, 'example.com');
       assert.ok(html.includes('on example.com'));
     });
+
+    it('includes author_icon (avatar) in oEmbed data', () => {
+      const html = renderNote(sampleNote, 'example.com');
+      const match = html.match(/data:application\/json,([^"]+)/);
+      assert.ok(match, 'oEmbed data URI should be present');
+      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      assert.equal(oEmbed.author_icon, 'https://example.com/avatar.png');
+    });
+
+    it('includes provider_name as vxsharkey with date in oEmbed data', () => {
+      const html = renderNote(sampleNote, 'example.com');
+      // Extract the oEmbed JSON from the data URI
+      const match = html.match(/data:application\/json,([^"]+)/);
+      assert.ok(match, 'oEmbed data URI should be present');
+      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      assert.ok(oEmbed.provider_name.startsWith('vxsharkey'));
+      assert.ok(oEmbed.provider_name.includes('2024-01-01'));
+    });
+
+    it('includes provider_name as vxsharkey without date when createdAt missing', () => {
+      const noteNoDate = { ...sampleNote, createdAt: null };
+      const html = renderNote(noteNoDate, 'example.com');
+      const match = html.match(/data:application\/json,([^"]+)/);
+      assert.ok(match, 'oEmbed data URI should be present');
+      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      assert.equal(oEmbed.provider_name, 'vxsharkey');
+    });
+
+    it('includes provider_icon in oEmbed data', () => {
+      const html = renderNote(sampleNote, 'example.com');
+      const match = html.match(/data:application\/json,([^"]+)/);
+      assert.ok(match, 'oEmbed data URI should be present');
+      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      assert.ok(oEmbed.provider_icon);
+    });
+
+    it('includes provider_url pointing to vxsharkey repo', () => {
+      const html = renderNote(sampleNote, 'example.com');
+      const match = html.match(/data:application\/json,([^"]+)/);
+      assert.ok(match, 'oEmbed data URI should be present');
+      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      assert.equal(oEmbed.provider_url, 'https://github.com/m4rcel-lol/vxsharkey');
+    });
   });
 });
 
