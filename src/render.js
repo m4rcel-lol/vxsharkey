@@ -20,16 +20,31 @@ function renderNote(note, instance) {
   const text = escapeHtml(note.text || '');
   const createdAt = note.createdAt ? escapeHtml(note.createdAt) : '';
 
-  // Build description for OG tags
+  // Engagement metrics
+  const repliesCount = typeof note.repliesCount === 'number' ? note.repliesCount : 0;
+  const renoteCount = typeof note.renoteCount === 'number' ? note.renoteCount : 0;
+  const reactionCount = note.reactions ? Object.values(note.reactions).reduce((sum, n) => sum + (typeof n === 'number' ? n : 0), 0) : 0;
+
+  // Build description for OG tags with engagement stats
   let description = '';
   if (cw) {
     description = `⚠️ CW: ${truncate(note.cw, 200)}\n\n${truncate(note.text || '', 200)}`;
   } else {
     description = truncate(note.text || '', 300);
   }
+
+  // Append engagement stats to description
+  const stats = [];
+  if (repliesCount > 0) stats.push(`💬 ${repliesCount}`);
+  if (renoteCount > 0) stats.push(`🔁 ${renoteCount}`);
+  if (reactionCount > 0) stats.push(`⭐ ${reactionCount}`);
+  if (stats.length > 0) {
+    description += `\n\n${stats.join('  ')}`;
+  }
+
   const ogDescription = escapeHtml(description);
 
-  const ogTitle = `${displayName} (@${username}) on ${escapeHtml(instance)}`;
+  const ogTitle = `${displayName} (@${username})`;
 
   // Extract media
   const files = Array.isArray(note.files) ? note.files : [];
@@ -63,6 +78,15 @@ function renderNote(note, instance) {
     }
   }
 
+  // Build OG image tags for multiple images
+  let ogImageTags = '';
+  for (const img of images) {
+    const imgUrl = sanitizeUrl(img.url || img.thumbnailUrl || '');
+    if (imgUrl) {
+      ogImageTags += `<meta property="og:image" content="${imgUrl}" />\n`;
+    }
+  }
+
   // CW HTML
   const cwHtml = cw
     ? `<div class="cw"><strong>⚠️ Content Warning:</strong> ${cw}</div>`
@@ -70,6 +94,16 @@ function renderNote(note, instance) {
 
   // Note text with line breaks
   const noteTextHtml = text.replace(/\n/g, '<br />');
+
+  // Engagement stats HTML
+  let statsHtml = '';
+  if (repliesCount > 0 || renoteCount > 0 || reactionCount > 0) {
+    statsHtml = '<div class="stats">';
+    if (repliesCount > 0) statsHtml += `<span class="stat">💬 ${repliesCount}</span>`;
+    if (renoteCount > 0) statsHtml += `<span class="stat">🔁 ${renoteCount}</span>`;
+    if (reactionCount > 0) statsHtml += `<span class="stat">⭐ ${reactionCount}</span>`;
+    statsHtml += '</div>';
+  }
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -82,10 +116,13 @@ function renderNote(note, instance) {
 <meta property="og:description" content="${ogDescription}" />
 <meta property="og:url" content="${noteUrl}" />
 <meta property="og:type" content="article" />
-${firstImage ? `<meta property="og:image" content="${firstImage}" />\n` : ''}${firstVideo ? `<meta property="og:video" content="${firstVideo}" />\n<meta property="og:video:type" content="video/mp4" />\n` : ''}<meta name="twitter:card" content="${twitterCard}" />
+<meta property="og:article:author" content="${displayName}" />
+${ogImageTags}${firstVideo ? `<meta property="og:video" content="${firstVideo}" />\n<meta property="og:video:type" content="video/mp4" />\n` : ''}<meta name="twitter:card" content="${twitterCard}" />
 <meta name="twitter:title" content="${ogTitle}" />
 <meta name="twitter:description" content="${ogDescription}" />
 ${firstImage ? `<meta name="twitter:image" content="${firstImage}" />\n` : ''}${firstVideo ? `<meta name="twitter:player" content="${firstVideo}" />\n` : ''}<meta name="theme-color" content="#86b300" />
+<link rel="canonical" href="${noteUrl}" />
+<link rel="alternate" type="application/json+oembed" href="${noteUrl}" />
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#1a1a2e;color:#e0e0e0;padding:20px;max-width:600px;margin:0 auto}
@@ -98,6 +135,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .text{line-height:1.6;white-space:pre-wrap;word-wrap:break-word}
 .media{margin-top:12px}
 .media img,.media video{max-width:100%;border-radius:8px}
+.stats{margin-top:12px;display:flex;gap:16px;color:#888;font-size:0.9em}
+.stat{display:inline-flex;align-items:center;gap:4px}
 .meta{margin-top:16px;font-size:0.8em;color:#666}
 .meta a{color:#86b300;text-decoration:none}
 .meta a:hover{text-decoration:underline}
@@ -115,6 +154,7 @@ ${avatarUrl ? `<img class="avatar" src="${avatarUrl}" alt="Avatar" />` : ''}
 ${cwHtml}
 <div class="text">${noteTextHtml}</div>
 ${mediaHtml}
+${statsHtml}
 <div class="meta">
 ${createdAt ? `<time>${createdAt}</time> · ` : ''}<a href="${noteUrl}">View original note</a>
 </div>
