@@ -475,27 +475,42 @@ describe('render', () => {
       assert.ok(!html.includes('og:article:published_time'));
     });
 
-    it('includes instance name in title', () => {
+    it('includes instance name in og:site_name', () => {
       const html = renderNote(sampleNote, 'example.com');
-      assert.ok(html.includes('on example.com'));
+      assert.ok(html.includes('<meta property="og:site_name" content="vxsharkey · example.com"'));
     });
 
-    it('includes author_icon (avatar) in oEmbed data', () => {
+    it('includes thumbnail_url (avatar) in oEmbed data when no images', () => {
       const html = renderNote(sampleNote, 'example.com');
       const match = html.match(/data:application\/json,([^"]+)/);
       assert.ok(match, 'oEmbed data URI should be present');
       const oEmbed = JSON.parse(decodeURIComponent(match[1]));
-      assert.equal(oEmbed.author_icon, 'https://example.com/avatar.png');
+      assert.equal(oEmbed.thumbnail_url, 'https://example.com/avatar.png');
+      assert.equal(oEmbed.thumbnail_width, 48);
+      assert.equal(oEmbed.thumbnail_height, 48);
     });
 
-    it('includes provider_name as vxsharkey with date in oEmbed data', () => {
+    it('omits thumbnail_url in oEmbed data when images are present', () => {
+      const noteWithImage = {
+        ...sampleNote,
+        files: [{ type: 'image/png', url: 'https://example.com/photo.png' }],
+      };
+      const html = renderNote(noteWithImage, 'example.com');
+      const match = html.match(/data:application\/json,([^"]+)/);
+      assert.ok(match, 'oEmbed data URI should be present');
+      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      assert.equal(oEmbed.thumbnail_url, undefined);
+    });
+
+    it('includes provider_name as vxsharkey with formatted date in oEmbed data', () => {
       const html = renderNote(sampleNote, 'example.com');
       // Extract the oEmbed JSON from the data URI
       const match = html.match(/data:application\/json,([^"]+)/);
       assert.ok(match, 'oEmbed data URI should be present');
       const oEmbed = JSON.parse(decodeURIComponent(match[1]));
       assert.ok(oEmbed.provider_name.startsWith('vxsharkey'));
-      assert.ok(oEmbed.provider_name.includes('2024-01-01'));
+      assert.ok(oEmbed.provider_name.includes('Jan'));
+      assert.ok(oEmbed.provider_name.includes('2024'));
     });
 
     it('includes provider_name as vxsharkey without date when createdAt missing', () => {
@@ -507,12 +522,13 @@ describe('render', () => {
       assert.equal(oEmbed.provider_name, 'vxsharkey');
     });
 
-    it('includes provider_icon in oEmbed data', () => {
+    it('does not include non-standard author_icon or provider_icon', () => {
       const html = renderNote(sampleNote, 'example.com');
       const match = html.match(/data:application\/json,([^"]+)/);
       assert.ok(match, 'oEmbed data URI should be present');
       const oEmbed = JSON.parse(decodeURIComponent(match[1]));
-      assert.ok(oEmbed.provider_icon);
+      assert.equal(oEmbed.author_icon, undefined);
+      assert.equal(oEmbed.provider_icon, undefined);
     });
 
     it('includes provider_url pointing to vxsharkey repo', () => {

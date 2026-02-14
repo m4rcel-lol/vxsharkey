@@ -105,18 +105,37 @@ function renderNote(note, instance) {
     statsHtml += '</div>';
   }
 
+  // Format date for display in embed footer
+  let formattedDate = '';
+  if (note.createdAt) {
+    try {
+      const d = new Date(note.createdAt);
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) +
+          ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      }
+    } catch {
+      // keep formattedDate empty on parse failure
+    }
+  }
+
   // oEmbed JSON for richer Discord/Slack embeds
   const oEmbedAuthorName = `${user.name || user.username || 'Unknown'} (@${user.username || 'unknown'}@${instance})`;
-  const oEmbedData = JSON.stringify({
+  const oEmbedObj = {
     version: '1.0',
     type: 'link',
     author_name: oEmbedAuthorName,
     author_url: `https://${instance}/@${user.username || 'unknown'}`,
-    author_icon: avatarUrl,
-    provider_name: createdAt ? `vxsharkey · ${createdAt}` : 'vxsharkey',
+    provider_name: formattedDate ? `vxsharkey · ${formattedDate}` : 'vxsharkey',
     provider_url: 'https://github.com/m4rcel-lol/vxsharkey',
-    provider_icon: 'https://avatars.githubusercontent.com/u/198809743',
-  });
+  };
+  // Use thumbnail_url (standard oEmbed field) for author avatar when no images
+  if (avatarUrl && images.length === 0) {
+    oEmbedObj.thumbnail_url = avatarUrl;
+    oEmbedObj.thumbnail_width = 48;
+    oEmbedObj.thumbnail_height = 48;
+  }
+  const oEmbedData = JSON.stringify(oEmbedObj);
 
   // Build conditional meta tags
   let publishedTimeMeta = '';
@@ -144,8 +163,8 @@ function renderNote(note, instance) {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${ogTitle} on ${escapeHtml(instance)}</title>
-<meta property="og:site_name" content="vxsharkey" />
-<meta property="og:title" content="${ogTitle} on ${escapeHtml(instance)}" />
+<meta property="og:site_name" content="vxsharkey · ${escapeHtml(instance)}" />
+<meta property="og:title" content="${ogTitle}" />
 <meta property="og:description" content="${ogDescription}" />
 <meta property="og:url" content="${noteUrl}" />
 <meta property="og:type" content="article" />
