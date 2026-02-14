@@ -108,7 +108,35 @@ function renderNote(note, instance) {
   // oEmbed JSON for richer Discord/Slack embeds
   const oEmbedAuthor = `${user.name || user.username || 'Unknown'} (@${user.username || 'unknown'}@${instance})`;
   const oEmbedProviderName = `vxsharkey · ${instance}`;
+  const oEmbedData = JSON.stringify({
+    version: '1.0',
+    type: 'link',
+    author_name: oEmbedAuthor,
+    author_url: `https://${instance}/@${user.username || 'unknown'}`,
+    provider_name: oEmbedProviderName,
+    provider_url: noteUrl,
+  });
 
+  // Build conditional meta tags
+  let publishedTimeMeta = '';
+  if (createdAt) {
+    publishedTimeMeta = `<meta property="og:article:published_time" content="${createdAt}" />\n`;
+  }
+
+  let videoMetaTags = '';
+  if (firstVideo) {
+    videoMetaTags = `<meta property="og:video" content="${firstVideo}" />\n<meta property="og:video:type" content="video/mp4" />\n`;
+  }
+
+  let twitterImageMeta = '';
+  if (firstImage) {
+    twitterImageMeta = `<meta name="twitter:image" content="${firstImage}" />\n`;
+  }
+
+  let twitterPlayerMeta = '';
+  if (firstVideo) {
+    twitterPlayerMeta = `<meta name="twitter:player" content="${firstVideo}" />\n`;
+  }
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -121,11 +149,11 @@ function renderNote(note, instance) {
 <meta property="og:url" content="${noteUrl}" />
 <meta property="og:type" content="article" />
 <meta property="og:article:author" content="${displayName}" />
-${createdAt ? `<meta property="og:article:published_time" content="${createdAt}" />\n` : ''}${ogImageTags}${firstVideo ? `<meta property="og:video" content="${firstVideo}" />\n<meta property="og:video:type" content="video/mp4" />\n` : ''}<meta name="twitter:card" content="${twitterCard}" />
+${publishedTimeMeta}${ogImageTags}${videoMetaTags}<meta name="twitter:card" content="${twitterCard}" />
 <meta name="twitter:title" content="${ogTitle}" />
 <meta name="twitter:description" content="${ogDescription}" />
-${firstImage ? `<meta name="twitter:image" content="${firstImage}" />\n` : ''}${firstVideo ? `<meta name="twitter:player" content="${firstVideo}" />\n` : ''}<meta name="theme-color" content="#86b300" />
-<link rel="alternate" type="application/json+oembed" href="data:application/json,${encodeURIComponent(JSON.stringify({ version: '1.0', type: 'link', author_name: oEmbedAuthor, author_url: `https://${instance}/@${user.username || 'unknown'}`, provider_name: oEmbedProviderName, provider_url: noteUrl }))}" />
+${twitterImageMeta}${twitterPlayerMeta}<meta name="theme-color" content="#86b300" />
+<link rel="alternate" type="application/json+oembed" href="data:application/json,${encodeURIComponent(oEmbedData)}" />
 <link rel="canonical" href="${noteUrl}" />
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
