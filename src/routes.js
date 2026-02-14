@@ -2,7 +2,7 @@
 
 const { validateInstanceDomain, validateNoteId } = require('./security');
 const { fetchNote } = require('./api');
-const { renderNote, renderError } = require('./render');
+const { renderNote, renderError, renderAbout } = require('./render');
 
 /**
  * Known bot/crawler user-agent patterns.
@@ -39,6 +39,12 @@ function isBot(userAgent) {
  * @param {{ cache: import('./cache').LRUCache, rateLimiter: import('./security').RateLimiter }} deps
  */
 function registerRoutes(app, { cache, rateLimiter }) {
+  // Landing / about page
+  app.get('/', async (_req, reply) => {
+    reply.type('text/html; charset=utf-8').header('Cache-Control', 'public, max-age=3600');
+    return renderAbout();
+  });
+
   // Health check
   app.get('/health', async (_req, reply) => {
     reply.type('application/json').send({ status: 'ok' });
