@@ -25,12 +25,39 @@ function renderNote(note, instance) {
   const renoteCount = typeof note.renoteCount === 'number' ? note.renoteCount : 0;
   const reactionCount = note.reactions ? Object.values(note.reactions).reduce((sum, n) => sum + (typeof n === 'number' ? n : 0), 0) : 0;
 
+  // Quote (renote with text) handling
+  const renote = note.renote || null;
+  let quoteUser = null;
+  let quoteText = '';
+  let quoteHtml = '';
+  if (renote && note.text) {
+    quoteUser = renote.user || {};
+    quoteText = renote.text || '';
+    const quoteDisplayName = escapeHtml(quoteUser.name || quoteUser.username || 'Unknown');
+    const quoteUsername = escapeHtml(quoteUser.username || 'unknown');
+    const quoteAvatarUrl = sanitizeUrl(quoteUser.avatarUrl || '');
+    const quoteNoteText = escapeHtml(quoteText).replace(/\n/g, '<br />');
+    const quoteNoteUrl = renote.id ? `https://${escapeHtml(instance)}/notes/${escapeHtml(renote.id)}` : '';
+    quoteHtml = `<div class="quote">` +
+      `<div class="quote-header">` +
+      (quoteAvatarUrl ? `<img class="quote-avatar" src="${quoteAvatarUrl}" alt="" />` : '') +
+      `<span class="quote-user">${quoteDisplayName}</span> <span class="quote-handle">@${quoteUsername}</span>` +
+      `</div>` +
+      `<div class="quote-text">${quoteNoteText}</div>` +
+      (quoteNoteUrl ? `<a class="quote-link" href="${quoteNoteUrl}">View quoted note</a>` : '') +
+      `</div>`;
+  }
+
   // Build description for OG tags with engagement stats
   let description = '';
   if (cw) {
     description = `⚠️ CW: ${truncate(note.cw, 200)}\n\n${truncate(note.text || '', 200)}`;
   } else {
     description = truncate(note.text || '', 300);
+  }
+  if (renote && note.text && quoteText) {
+    const qUser = quoteUser.name || quoteUser.username || 'Unknown';
+    description += `\n\n💬 Quoting @${qUser}: ${truncate(quoteText, 150)}`;
   }
 
   // Append engagement stats to description
@@ -192,6 +219,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .meta{margin-top:16px;font-size:0.8em;color:#666}
 .meta a{color:#86b300;text-decoration:none}
 .meta a:hover{text-decoration:underline}
+.quote{margin-top:12px;border-left:3px solid #86b300;background:#0d1117;border-radius:0 8px 8px 0;padding:12px}
+.quote-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:0.9em}
+.quote-avatar{width:20px;height:20px;border-radius:50%;object-fit:cover}
+.quote-user{font-weight:bold;color:#e0e0e0}
+.quote-handle{color:#888;font-size:0.85em}
+.quote-text{line-height:1.5;white-space:pre-wrap;word-wrap:break-word;color:#ccc;font-size:0.95em}
+.quote-link{display:inline-block;margin-top:6px;font-size:0.8em;color:#86b300;text-decoration:none}
+.quote-link:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -205,6 +240,7 @@ ${avatarUrl ? `<img class="avatar" src="${avatarUrl}" alt="Avatar" />` : ''}
 </div>
 ${cwHtml}
 <div class="text">${noteTextHtml}</div>
+${quoteHtml}
 ${mediaHtml}
 ${statsHtml}
 <div class="meta">

@@ -539,6 +539,109 @@ describe('render', () => {
       assert.equal(oEmbed.provider_url, 'https://github.com/m4rcel-lol/vxsharkey');
     });
   });
+
+  describe('renderNote quote display', () => {
+    const sampleNote = {
+      id: 'abc123',
+      text: 'Check this out!',
+      cw: null,
+      user: {
+        name: 'Test User',
+        username: 'testuser',
+        avatarUrl: 'https://example.com/avatar.png',
+      },
+      files: [],
+      createdAt: '2024-01-01T00:00:00.000Z',
+    };
+
+    const quotedNote = {
+      id: 'quoted456',
+      text: 'Original post content',
+      user: {
+        name: 'Quoted Author',
+        username: 'quoteduser',
+        avatarUrl: 'https://example.com/quoted-avatar.png',
+      },
+    };
+
+    it('renders quote block when note has renote with text', () => {
+      const noteWithQuote = { ...sampleNote, renote: quotedNote };
+      const html = renderNote(noteWithQuote, 'example.com');
+      assert.ok(html.includes('class="quote"'));
+      assert.ok(html.includes('Original post content'));
+      assert.ok(html.includes('Quoted Author'));
+      assert.ok(html.includes('@quoteduser'));
+    });
+
+    it('includes quoted author avatar in quote block', () => {
+      const noteWithQuote = { ...sampleNote, renote: quotedNote };
+      const html = renderNote(noteWithQuote, 'example.com');
+      assert.ok(html.includes('class="quote-avatar"'));
+      assert.ok(html.includes('https://example.com/quoted-avatar.png'));
+    });
+
+    it('includes link to quoted note', () => {
+      const noteWithQuote = { ...sampleNote, renote: quotedNote };
+      const html = renderNote(noteWithQuote, 'example.com');
+      assert.ok(html.includes('https://example.com/notes/quoted456'));
+      assert.ok(html.includes('View quoted note'));
+    });
+
+    it('includes quote info in OG description', () => {
+      const noteWithQuote = { ...sampleNote, renote: quotedNote };
+      const html = renderNote(noteWithQuote, 'example.com');
+      assert.ok(html.includes('Quoting @Quoted Author'));
+      assert.ok(html.includes('Original post content'));
+    });
+
+    it('does not render quote block for notes without renote', () => {
+      const html = renderNote(sampleNote, 'example.com');
+      assert.ok(!html.includes('class="quote"'));
+    });
+
+    it('does not render quote block for pure renotes (no text)', () => {
+      const pureRenote = { ...sampleNote, text: null, renote: quotedNote };
+      const html = renderNote(pureRenote, 'example.com');
+      assert.ok(!html.includes('class="quote"'));
+    });
+
+    it('includes quote CSS styles', () => {
+      const noteWithQuote = { ...sampleNote, renote: quotedNote };
+      const html = renderNote(noteWithQuote, 'example.com');
+      assert.ok(html.includes('.quote{'));
+      assert.ok(html.includes('border-left'));
+    });
+
+    it('escapes XSS in quoted note text', () => {
+      const xssQuote = { ...quotedNote, text: '<script>alert("xss")</script>' };
+      const noteWithXssQuote = { ...sampleNote, renote: xssQuote };
+      const html = renderNote(noteWithXssQuote, 'example.com');
+      assert.ok(!html.includes('<script>alert'));
+      assert.ok(html.includes('&lt;script&gt;'));
+    });
+
+    it('escapes XSS in quoted user display name', () => {
+      const xssQuote = { ...quotedNote, user: { ...quotedNote.user, name: '<img onerror=alert(1)>' } };
+      const noteWithXssQuote = { ...sampleNote, renote: xssQuote };
+      const html = renderNote(noteWithXssQuote, 'example.com');
+      assert.ok(!html.includes('<img onerror'));
+    });
+
+    it('handles quoted note with no user gracefully', () => {
+      const noUserQuote = { ...quotedNote, user: null };
+      const noteWithQuote = { ...sampleNote, renote: noUserQuote };
+      const html = renderNote(noteWithQuote, 'example.com');
+      assert.ok(html.includes('class="quote"'));
+      assert.ok(html.includes('Unknown'));
+    });
+
+    it('handles quoted note with no text gracefully', () => {
+      const noTextQuote = { ...quotedNote, text: null };
+      const noteWithQuote = { ...sampleNote, renote: noTextQuote };
+      const html = renderNote(noteWithQuote, 'example.com');
+      assert.ok(html.includes('class="quote"'));
+    });
+  });
 });
 
 // ============================================================
