@@ -106,15 +106,16 @@ function renderNote(note, instance) {
   }
 
   // oEmbed JSON for richer Discord/Slack embeds
-  const oEmbedAuthor = `${user.name || user.username || 'Unknown'} (@${user.username || 'unknown'}@${instance})`;
-  const oEmbedProviderName = `vxsharkey · ${instance}`;
+  const oEmbedAuthorName = `${user.name || user.username || 'Unknown'} (@${user.username || 'unknown'}@${instance})`;
   const oEmbedData = JSON.stringify({
     version: '1.0',
     type: 'link',
-    author_name: oEmbedAuthor,
+    author_name: oEmbedAuthorName,
     author_url: `https://${instance}/@${user.username || 'unknown'}`,
-    provider_name: oEmbedProviderName,
-    provider_url: noteUrl,
+    author_icon: avatarUrl,
+    provider_name: createdAt ? `vxsharkey · ${createdAt}` : 'vxsharkey',
+    provider_url: 'https://github.com/m4rcel-lol/vxsharkey',
+    provider_icon: 'https://avatars.githubusercontent.com/u/198809743',
   });
 
   // Build conditional meta tags
