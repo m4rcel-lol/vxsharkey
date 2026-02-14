@@ -395,7 +395,7 @@ describe('render', () => {
       };
       const html = renderNote(noteWithImages, 'example.com');
       const ogImageCount = (html.match(/og:image/g) || []).length;
-      assert.ok(ogImageCount >= 2);
+      assert.equal(ogImageCount, 2);
     });
   });
 

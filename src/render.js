@@ -111,7 +111,7 @@ function renderNote(note, instance) {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${ogTitle}</title>
-<meta property="og:site_name" content="vxsharkey" />
+<meta property="og:site_name" content="vxsharkey · ${escapeHtml(instance)}" />
 <meta property="og:title" content="${ogTitle}" />
 <meta property="og:description" content="${ogDescription}" />
 <meta property="og:url" content="${noteUrl}" />
@@ -122,7 +122,6 @@ ${ogImageTags}${firstVideo ? `<meta property="og:video" content="${firstVideo}" 
 <meta name="twitter:description" content="${ogDescription}" />
 ${firstImage ? `<meta name="twitter:image" content="${firstImage}" />\n` : ''}${firstVideo ? `<meta name="twitter:player" content="${firstVideo}" />\n` : ''}<meta name="theme-color" content="#86b300" />
 <link rel="canonical" href="${noteUrl}" />
-<link rel="alternate" type="application/json+oembed" href="${noteUrl}" />
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#1a1a2e;color:#e0e0e0;padding:20px;max-width:600px;margin:0 auto}
