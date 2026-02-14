@@ -482,8 +482,10 @@ describe('render', () => {
 
     it('includes author_icon (avatar) in oEmbed data', () => {
       const html = renderNote(sampleNote, 'example.com');
-      assert.ok(html.includes('author_icon'));
-      assert.ok(html.includes('https://example.com/avatar.png'));
+      const match = html.match(/data:application\/json,([^"]+)/);
+      assert.ok(match, 'oEmbed data URI should be present');
+      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      assert.equal(oEmbed.author_icon, 'https://example.com/avatar.png');
     });
 
     it('includes provider_name as vxsharkey with date in oEmbed data', () => {
