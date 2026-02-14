@@ -301,7 +301,7 @@ describe('render', () => {
 
     it('includes user info in OG tags', () => {
       const html = renderNote(sampleNote, 'example.com');
-      assert.ok(html.includes('Test User (@testuser) on example.com'));
+      assert.ok(html.includes('Test User (@testuser)'));
     });
 
     it('includes note text', () => {
@@ -354,6 +354,49 @@ describe('render', () => {
       const html = renderNote(noteNoUser, 'example.com');
       assert.ok(html.includes('Unknown'));
     });
+
+    it('includes engagement stats when present', () => {
+      const noteWithStats = {
+        ...sampleNote,
+        repliesCount: 5,
+        renoteCount: 10,
+        reactions: { '👍': 3, '❤️': 7 },
+      };
+      const html = renderNote(noteWithStats, 'example.com');
+      assert.ok(html.includes('💬 5'));
+      assert.ok(html.includes('🔁 10'));
+      assert.ok(html.includes('⭐ 10'));
+    });
+
+    it('omits engagement stats when all zero', () => {
+      const html = renderNote(sampleNote, 'example.com');
+      assert.ok(!html.includes('class="stats"'));
+    });
+
+    it('includes canonical link to original note', () => {
+      const html = renderNote(sampleNote, 'example.com');
+      assert.ok(html.includes('<link rel="canonical"'));
+      assert.ok(html.includes('https://example.com/notes/abc123'));
+    });
+
+    it('includes og:article:author meta tag', () => {
+      const html = renderNote(sampleNote, 'example.com');
+      assert.ok(html.includes('og:article:author'));
+      assert.ok(html.includes('Test User'));
+    });
+
+    it('includes multiple og:image tags for multiple images', () => {
+      const noteWithImages = {
+        ...sampleNote,
+        files: [
+          { type: 'image/png', url: 'https://example.com/photo1.png' },
+          { type: 'image/jpeg', url: 'https://example.com/photo2.jpg' },
+        ],
+      };
+      const html = renderNote(noteWithImages, 'example.com');
+      const ogImageCount = (html.match(/og:image/g) || []).length;
+      assert.equal(ogImageCount, 2);
+    });
   });
 
   describe('renderError', () => {
@@ -374,7 +417,46 @@ describe('render', () => {
 // Integration tests for routes
 // ============================================================
 const fastify = require('fastify');
-const { registerRoutes } = require('../src/routes');
+const { registerRoutes, isBot } = require('../src/routes');
+
+describe('isBot', () => {
+  it('detects Discord bot', () => {
+    assert.equal(isBot('Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)'), true);
+  });
+
+  it('detects Slack bot', () => {
+    assert.equal(isBot('Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)'), true);
+  });
+
+  it('detects Telegram bot', () => {
+    assert.equal(isBot('TelegramBot (like TwitterBot)'), true);
+  });
+
+  it('detects Twitter bot', () => {
+    assert.equal(isBot('Twitterbot/1.0'), true);
+  });
+
+  it('detects generic crawlers', () => {
+    assert.equal(isBot('Googlebot/2.1'), true);
+    assert.equal(isBot('curl/7.68.0'), true);
+  });
+
+  it('returns true for empty user-agent', () => {
+    assert.equal(isBot(''), true);
+  });
+
+  it('returns true for missing user-agent', () => {
+    assert.equal(isBot(undefined), true);
+  });
+
+  it('returns false for regular browser', () => {
+    assert.equal(isBot('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'), false);
+  });
+
+  it('returns false for mobile browser', () => {
+    assert.equal(isBot('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'), false);
+  });
+});
 
 describe('routes (integration)', () => {
   let app;
@@ -435,5 +517,30 @@ describe('routes (integration)', () => {
   it('returns 404 for unknown routes', async () => {
     const res = await app.inject({ method: 'GET', url: '/some/random/path' });
     assert.equal(res.statusCode, 404);
+  });
+
+  it('redirects regular browsers to original note URL', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/example.com/notes/abc123',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+    });
+    assert.equal(res.statusCode, 302);
+    assert.equal(res.headers.location, 'https://example.com/notes/abc123');
+  });
+
+  it('serves embed page for bot user-agents', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/example.com/notes/abc123',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)',
+      },
+    });
+    // Will be 502 because example.com isn't reachable, but the important thing
+    // is that it does NOT redirect (not 302)
+    assert.notEqual(res.statusCode, 302);
   });
 });

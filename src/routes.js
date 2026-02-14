@@ -5,6 +5,35 @@ const { fetchNote } = require('./api');
 const { renderNote, renderError } = require('./render');
 
 /**
+ * Known bot/crawler user-agent patterns.
+ * These are embed scrapers that should receive the HTML embed page.
+ * Regular browsers are redirected to the original note.
+ */
+const BOT_USER_AGENTS = [
+  'bot', 'crawler', 'spider', 'curl', 'wget',
+  'facebookexternalhit', 'twitterbot', 'linkedinbot',
+  'slackbot', 'telegrambot', 'whatsapp', 'discordbot',
+  'embedly', 'quora', 'showyoubot', 'outbrain',
+  'pinterest', 'applebot', 'redditbot', 'bingbot',
+  'googlebot', 'yandexbot', 'duckduckbot',
+  'baiduspider', 'sogou', 'ia_archiver',
+  'mj12bot', 'ahrefsbot', 'semrushbot',
+  'python-requests', 'go-http-client', 'httpie',
+  'postmanruntime', 'insomnia',
+];
+
+/**
+ * Check if a User-Agent string belongs to a bot/crawler.
+ * @param {string} userAgent
+ * @returns {boolean}
+ */
+function isBot(userAgent) {
+  if (typeof userAgent !== 'string' || userAgent.length === 0) return true;
+  const lower = userAgent.toLowerCase();
+  return BOT_USER_AGENTS.some((bot) => lower.includes(bot));
+}
+
+/**
  * Register routes on a Fastify instance.
  * @param {import('fastify').FastifyInstance} app
  * @param {{ cache: import('./cache').LRUCache, rateLimiter: import('./security').RateLimiter }} deps
@@ -54,6 +83,15 @@ function registerRoutes(app, { cache, rateLimiter }) {
       return renderError(400, `Invalid note ID: ${noteIdCheck.reason}`);
     }
 
+    const noteUrl = `https://${instance}/notes/${noteId}`;
+
+    // Redirect regular browsers to the original note (like vxtwitter)
+    const userAgent = req.headers['user-agent'] || '';
+    if (!isBot(userAgent)) {
+      reply.redirect(noteUrl, 302);
+      return;
+    }
+
     // Check cache
     const cacheKey = `${instance}:${noteId}`;
     const cached = cache.get(cacheKey);
@@ -96,4 +134,4 @@ function registerRoutes(app, { cache, rateLimiter }) {
   });
 }
 
-module.exports = { registerRoutes };
+module.exports = { registerRoutes, isBot };
