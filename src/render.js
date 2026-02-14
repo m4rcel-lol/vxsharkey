@@ -126,7 +126,7 @@ function renderNote(note, instance) {
     type: 'link',
     author_name: oEmbedAuthorName,
     author_url: `https://${instance}/@${user.username || 'unknown'}`,
-    provider_name: formattedDate ? `vxsharkey · ${formattedDate}` : 'vxsharkey',
+    provider_name: formattedDate ? `🦈 vxsharkey · ${formattedDate}` : '🦈 vxsharkey',
     provider_url: 'https://github.com/m4rcel-lol/vxsharkey',
   };
   // Use thumbnail_url (standard oEmbed field) for author avatar when no images
