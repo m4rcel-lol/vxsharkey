@@ -107,7 +107,7 @@ function renderNote(note, instance) {
 
   // Format date for display in embed footer
   let formattedDate = '';
-  if (createdAt) {
+  if (note.createdAt) {
     try {
       const d = new Date(note.createdAt);
       if (!isNaN(d.getTime())) {

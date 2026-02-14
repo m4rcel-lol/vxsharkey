@@ -477,8 +477,7 @@ describe('render', () => {
 
     it('includes instance name in og:site_name', () => {
       const html = renderNote(sampleNote, 'example.com');
-      assert.ok(html.includes('og:site_name'));
-      assert.ok(html.includes('vxsharkey · example.com'));
+      assert.ok(html.includes('<meta property="og:site_name" content="vxsharkey · example.com"'));
     });
 
     it('includes thumbnail_url (avatar) in oEmbed data when no images', () => {
