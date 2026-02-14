@@ -364,7 +364,7 @@ describe('render', () => {
       };
       const html = renderNote(noteWithStats, 'example.com');
       assert.ok(html.includes('💬 5'));
-      assert.ok(html.includes('🔁 10'));
+      assert.ok(html.includes('🚀 10'));
       assert.ok(html.includes('⭐ 10'));
     });
 
