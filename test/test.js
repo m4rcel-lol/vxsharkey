@@ -275,7 +275,7 @@ describe('LRUCache', () => {
 // ============================================================
 // Unit tests for render module
 // ============================================================
-const { renderNote, renderError } = require('../src/render');
+const { renderNote, renderError, renderAbout } = require('../src/render');
 
 describe('render', () => {
   describe('renderNote', () => {
@@ -411,6 +411,75 @@ describe('render', () => {
       assert.ok(!html.includes('<script>alert'));
     });
   });
+
+  describe('renderAbout', () => {
+    it('renders valid HTML', () => {
+      const html = renderAbout();
+      assert.ok(html.includes('<!DOCTYPE html>'));
+      assert.ok(html.includes('vxsharkey'));
+    });
+
+    it('includes OG metadata', () => {
+      const html = renderAbout();
+      assert.ok(html.includes('og:title'));
+      assert.ok(html.includes('og:description'));
+    });
+
+    it('includes usage instructions', () => {
+      const html = renderAbout();
+      assert.ok(html.includes('How it works'));
+      assert.ok(html.includes('Usage'));
+      assert.ok(html.includes('Features'));
+    });
+
+    it('includes theme-color', () => {
+      const html = renderAbout();
+      assert.ok(html.includes('theme-color'));
+    });
+  });
+
+  describe('renderNote embed improvements', () => {
+    const sampleNote = {
+      id: 'abc123',
+      text: 'Hello, world!',
+      cw: null,
+      user: {
+        name: 'Test User',
+        username: 'testuser',
+        avatarUrl: 'https://example.com/avatar.png',
+      },
+      files: [],
+      createdAt: '2024-01-01T00:00:00.000Z',
+    };
+
+    it('includes oEmbed link tag', () => {
+      const html = renderNote(sampleNote, 'example.com');
+      assert.ok(html.includes('application/json+oembed'));
+    });
+
+    it('includes author info in oEmbed data', () => {
+      const html = renderNote(sampleNote, 'example.com');
+      assert.ok(html.includes('author_name'));
+      assert.ok(html.includes('testuser'));
+    });
+
+    it('includes published time meta tag', () => {
+      const html = renderNote(sampleNote, 'example.com');
+      assert.ok(html.includes('og:article:published_time'));
+      assert.ok(html.includes('2024-01-01T00:00:00.000Z'));
+    });
+
+    it('omits published time when createdAt is missing', () => {
+      const noteNoDate = { ...sampleNote, createdAt: null };
+      const html = renderNote(noteNoDate, 'example.com');
+      assert.ok(!html.includes('og:article:published_time'));
+    });
+
+    it('includes instance name in title', () => {
+      const html = renderNote(sampleNote, 'example.com');
+      assert.ok(html.includes('on example.com'));
+    });
+  });
 });
 
 // ============================================================
@@ -481,6 +550,19 @@ describe('routes (integration)', () => {
     assert.equal(res.statusCode, 200);
     const body = JSON.parse(res.body);
     assert.equal(body.status, 'ok');
+  });
+
+  it('GET / returns about page', async () => {
+    const res = await app.inject({ method: 'GET', url: '/' });
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.headers['content-type'].includes('text/html'));
+    assert.ok(res.body.includes('vxsharkey'));
+    assert.ok(res.body.includes('How it works'));
+  });
+
+  it('GET / includes cache headers', async () => {
+    const res = await app.inject({ method: 'GET', url: '/' });
+    assert.ok(res.headers['cache-control'].includes('public'));
   });
 
   it('GET /metrics returns metrics', async () => {
