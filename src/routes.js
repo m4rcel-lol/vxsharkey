@@ -149,9 +149,9 @@ function registerRoutes(app, { cache, rateLimiter }) {
       return { error: `Invalid note ID: ${noteIdCheck.reason}` };
     }
 
-    // Check cache for the note data
-    const cacheKey = `${instance}:${noteId}`;
-    let note = cache.get(`oembed:${cacheKey}`);
+    // Check cache for note data (prefixed to avoid collision with HTML cache)
+    const cacheKey = `oembed:${instance}:${noteId}`;
+    let note = cache.get(cacheKey);
 
     if (!note) {
       const result = await fetchNote(instance, noteId);
@@ -160,7 +160,7 @@ function registerRoutes(app, { cache, rateLimiter }) {
         return { error: result.error };
       }
       note = result.note;
-      cache.set(`oembed:${cacheKey}`, note);
+      cache.set(cacheKey, note);
     }
 
     const oEmbed = buildOEmbed(note, instance);
