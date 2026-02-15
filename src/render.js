@@ -138,8 +138,7 @@ function renderNote(note, instance) {
     try {
       const d = new Date(note.createdAt);
       if (!isNaN(d.getTime())) {
-        formattedDate = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) +
-          ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        formattedDate = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
       }
     } catch {
       // keep formattedDate empty on parse failure
