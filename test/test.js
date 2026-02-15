@@ -275,7 +275,7 @@ describe('LRUCache', () => {
 // ============================================================
 // Unit tests for render module
 // ============================================================
-const { renderNote, renderError, renderAbout } = require('../src/render');
+const { renderNote, renderError, renderAbout, buildOEmbed } = require('../src/render');
 
 describe('render', () => {
   describe('renderNote', () => {
@@ -452,15 +452,15 @@ describe('render', () => {
       createdAt: '2024-01-01T00:00:00.000Z',
     };
 
-    it('includes oEmbed link tag', () => {
+    it('includes oEmbed link tag pointing to oembed.json endpoint', () => {
       const html = renderNote(sampleNote, 'example.com');
       assert.ok(html.includes('application/json+oembed'));
+      assert.ok(html.includes('/example.com/notes/abc123/oembed.json'));
     });
 
     it('includes author info in oEmbed data', () => {
-      const html = renderNote(sampleNote, 'example.com');
-      assert.ok(html.includes('author_name'));
-      assert.ok(html.includes('testuser'));
+      const oEmbed = buildOEmbed(sampleNote, 'example.com');
+      assert.ok(oEmbed.author_name.includes('testuser'));
     });
 
     it('includes published time meta tag', () => {
@@ -481,10 +481,7 @@ describe('render', () => {
     });
 
     it('includes thumbnail_url (avatar) in oEmbed data when no images', () => {
-      const html = renderNote(sampleNote, 'example.com');
-      const match = html.match(/data:application\/json,([^"]+)/);
-      assert.ok(match, 'oEmbed data URI should be present');
-      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      const oEmbed = buildOEmbed(sampleNote, 'example.com');
       assert.equal(oEmbed.thumbnail_url, 'https://example.com/avatar.png');
       assert.equal(oEmbed.thumbnail_width, 48);
       assert.equal(oEmbed.thumbnail_height, 48);
@@ -495,19 +492,12 @@ describe('render', () => {
         ...sampleNote,
         files: [{ type: 'image/png', url: 'https://example.com/photo.png' }],
       };
-      const html = renderNote(noteWithImage, 'example.com');
-      const match = html.match(/data:application\/json,([^"]+)/);
-      assert.ok(match, 'oEmbed data URI should be present');
-      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      const oEmbed = buildOEmbed(noteWithImage, 'example.com');
       assert.equal(oEmbed.thumbnail_url, undefined);
     });
 
     it('includes provider_name as 🦈 vxsharkey with formatted date in oEmbed data', () => {
-      const html = renderNote(sampleNote, 'example.com');
-      // Extract the oEmbed JSON from the data URI
-      const match = html.match(/data:application\/json,([^"]+)/);
-      assert.ok(match, 'oEmbed data URI should be present');
-      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      const oEmbed = buildOEmbed(sampleNote, 'example.com');
       assert.ok(oEmbed.provider_name.startsWith('🦈 vxsharkey'));
       assert.ok(oEmbed.provider_name.includes('Jan'));
       assert.ok(oEmbed.provider_name.includes('2024'));
@@ -515,27 +505,18 @@ describe('render', () => {
 
     it('includes provider_name as 🦈 vxsharkey without date when createdAt missing', () => {
       const noteNoDate = { ...sampleNote, createdAt: null };
-      const html = renderNote(noteNoDate, 'example.com');
-      const match = html.match(/data:application\/json,([^"]+)/);
-      assert.ok(match, 'oEmbed data URI should be present');
-      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      const oEmbed = buildOEmbed(noteNoDate, 'example.com');
       assert.equal(oEmbed.provider_name, '🦈 vxsharkey');
     });
 
     it('does not include non-standard author_icon or provider_icon', () => {
-      const html = renderNote(sampleNote, 'example.com');
-      const match = html.match(/data:application\/json,([^"]+)/);
-      assert.ok(match, 'oEmbed data URI should be present');
-      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      const oEmbed = buildOEmbed(sampleNote, 'example.com');
       assert.equal(oEmbed.author_icon, undefined);
       assert.equal(oEmbed.provider_icon, undefined);
     });
 
     it('includes provider_url pointing to vxsharkey repo', () => {
-      const html = renderNote(sampleNote, 'example.com');
-      const match = html.match(/data:application\/json,([^"]+)/);
-      assert.ok(match, 'oEmbed data URI should be present');
-      const oEmbed = JSON.parse(decodeURIComponent(match[1]));
+      const oEmbed = buildOEmbed(sampleNote, 'example.com');
       assert.equal(oEmbed.provider_url, 'https://github.com/m4rcel-lol/vxsharkey');
     });
   });
@@ -786,5 +767,25 @@ describe('routes (integration)', () => {
     // Will be 502 because example.com isn't reachable, but the important thing
     // is that it does NOT redirect (not 302)
     assert.notEqual(res.statusCode, 302);
+  });
+
+  it('oEmbed endpoint rejects invalid instance', async () => {
+    const res = await app.inject({ method: 'GET', url: '/localhost/notes/abc123/oembed.json' });
+    assert.equal(res.statusCode, 400);
+    const body = JSON.parse(res.body);
+    assert.ok(body.error.includes('Invalid instance'));
+  });
+
+  it('oEmbed endpoint rejects invalid note ID', async () => {
+    const res = await app.inject({ method: 'GET', url: '/example.com/notes/abc-def/oembed.json' });
+    assert.equal(res.statusCode, 400);
+    const body = JSON.parse(res.body);
+    assert.ok(body.error.includes('Invalid note ID'));
+  });
+
+  it('oEmbed endpoint returns JSON content type', async () => {
+    const res = await app.inject({ method: 'GET', url: '/example.com/notes/abc123/oembed.json' });
+    // Will be 502 because example.com isn't reachable, but content type should be JSON
+    assert.ok(res.headers['content-type'].includes('application/json'));
   });
 });
