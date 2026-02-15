@@ -132,36 +132,6 @@ function renderNote(note, instance) {
     statsHtml += '</div>';
   }
 
-  // Format date for display in embed footer
-  let formattedDate = '';
-  if (note.createdAt) {
-    try {
-      const d = new Date(note.createdAt);
-      if (!isNaN(d.getTime())) {
-        formattedDate = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-      }
-    } catch {
-      // keep formattedDate empty on parse failure
-    }
-  }
-
-  // oEmbed JSON for richer Discord/Slack embeds
-  const oEmbedAuthorName = `${user.name || user.username || 'Unknown'} (@${user.username || 'unknown'}@${instance})`;
-  const oEmbedObj = {
-    version: '1.0',
-    type: 'link',
-    author_name: oEmbedAuthorName,
-    author_url: `https://${instance}/@${user.username || 'unknown'}`,
-    provider_name: formattedDate ? `🦈 vxsharkey · ${formattedDate}` : '🦈 vxsharkey',
-    provider_url: 'https://github.com/m4rcel-lol/vxsharkey',
-  };
-  // Use thumbnail_url (standard oEmbed field) for author avatar when no images
-  if (avatarUrl && images.length === 0) {
-    oEmbedObj.thumbnail_url = avatarUrl;
-    oEmbedObj.thumbnail_width = 48;
-    oEmbedObj.thumbnail_height = 48;
-  }
-  const oEmbedData = JSON.stringify(oEmbedObj);
 
   // Build conditional meta tags
   let publishedTimeMeta = '';
@@ -199,7 +169,7 @@ ${publishedTimeMeta}${ogImageTags}${videoMetaTags}<meta name="twitter:card" cont
 <meta name="twitter:title" content="${ogTitle}" />
 <meta name="twitter:description" content="${ogDescription}" />
 ${twitterImageMeta}${twitterPlayerMeta}<meta name="theme-color" content="#86b300" />
-<link rel="alternate" type="application/json+oembed" href="data:application/json,${encodeURIComponent(oEmbedData)}" />
+<link rel="alternate" type="application/json+oembed" href="/${escapeHtml(instance)}/notes/${escapeHtml(note.id || '')}/oembed.json" />
 <link rel="canonical" href="${noteUrl}" />
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -348,4 +318,46 @@ code{background:#0d1117;padding:3px 8px;border-radius:4px;font-size:0.95em;color
 </html>`;
 }
 
-module.exports = { renderNote, renderError, renderAbout };
+/**
+ * Build the oEmbed JSON object for a note.
+ *
+ * @param {object} note - The Misskey/Sharkey note object
+ * @param {string} instance - The instance domain
+ * @returns {object} oEmbed 1.0 object
+ */
+function buildOEmbed(note, instance) {
+  const user = note.user || {};
+  const avatarUrl = sanitizeUrl(user.avatarUrl || '');
+  const files = Array.isArray(note.files) ? note.files : [];
+  const images = files.filter((f) => f.type && f.type.startsWith('image/'));
+
+  let formattedDate = '';
+  if (note.createdAt) {
+    try {
+      const d = new Date(note.createdAt);
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+    } catch {
+      // keep formattedDate empty on parse failure
+    }
+  }
+
+  const oEmbedAuthorName = `${user.name || user.username || 'Unknown'} (@${user.username || 'unknown'}@${instance})`;
+  const obj = {
+    version: '1.0',
+    type: 'link',
+    author_name: oEmbedAuthorName,
+    author_url: `https://${instance}/@${user.username || 'unknown'}`,
+    provider_name: formattedDate ? `🦈 vxsharkey · ${formattedDate}` : '🦈 vxsharkey',
+    provider_url: 'https://github.com/m4rcel-lol/vxsharkey',
+  };
+  if (avatarUrl && images.length === 0) {
+    obj.thumbnail_url = avatarUrl;
+    obj.thumbnail_width = 48;
+    obj.thumbnail_height = 48;
+  }
+  return obj;
+}
+
+module.exports = { renderNote, renderError, renderAbout, buildOEmbed };

@@ -2,7 +2,7 @@
 
 const { validateInstanceDomain, validateNoteId } = require('./security');
 const { fetchNote } = require('./api');
-const { renderNote, renderError, renderAbout } = require('./render');
+const { renderNote, renderError, renderAbout, buildOEmbed } = require('./render');
 
 /**
  * Known bot/crawler user-agent patterns.
@@ -131,6 +131,44 @@ function registerRoutes(app, { cache, rateLimiter }) {
       .header('Cache-Control', 'public, max-age=300')
       .header('X-Cache', 'MISS');
     return html;
+  });
+
+  // oEmbed JSON endpoint for Discord/Slack footer and author info
+  app.get('/:instance/notes/:noteId/oembed.json', async (req, reply) => {
+    const { instance, noteId } = req.params;
+
+    const domainCheck = validateInstanceDomain(instance);
+    if (!domainCheck.valid) {
+      reply.status(400).type('application/json');
+      return { error: `Invalid instance: ${domainCheck.reason}` };
+    }
+
+    const noteIdCheck = validateNoteId(noteId);
+    if (!noteIdCheck.valid) {
+      reply.status(400).type('application/json');
+      return { error: `Invalid note ID: ${noteIdCheck.reason}` };
+    }
+
+    // Check cache for note data (prefixed to avoid collision with HTML cache)
+    const cacheKey = `oembed:${instance}:${noteId}`;
+    let note = cache.get(cacheKey);
+
+    if (!note) {
+      const result = await fetchNote(instance, noteId);
+      if (!result.ok) {
+        reply.status(result.status === 404 ? 404 : 502).type('application/json');
+        return { error: result.error };
+      }
+      note = result.note;
+      cache.set(cacheKey, note);
+    }
+
+    const oEmbed = buildOEmbed(note, instance);
+
+    reply
+      .type('application/json')
+      .header('Cache-Control', 'public, max-age=300');
+    return oEmbed;
   });
 
   // Catch-all for unknown routes
